@@ -26,7 +26,7 @@ yarn
 npm install
 ```
 
-安装python依赖包[poppler](https://pypi.org/project/pdf2image/)
+安装python依赖包[pdf2image](https://pypi.org/project/pdf2image/)
 
 ```shell
 pip install pdf2image
