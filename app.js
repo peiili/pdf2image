@@ -4,6 +4,7 @@ const express = require('express');
 const { exec } = require('child_process');
 const router = express.Router();
 const multer = require('multer');
+const { rawListeners } = require('process');
 const app = express();
 
 const port = 3000;
@@ -32,9 +33,16 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-router.get('/', (req,res) => {
-    const file = fs.readFileSync('src/index.html', 'utf-8')
-    res.status(200).send(file);
+router.get('\/*.html|\/$', (req,res) => {
+    const files = fs.readdirSync('./src')
+    const path = req.path==='/'?'/index.html':req.path
+    const hasPage = files.find(e=>'/'+e===path)
+    if(hasPage){
+        const file = fs.readFileSync(`src${path}`, 'utf-8')
+        res.status(200).send(file);
+    }else{
+        res.status(404).send();
+    }
 })
 
 const outBasePath = './img/'
@@ -57,19 +65,24 @@ router.post('/uploader',upload.single('file'), (req,res) => {
         console.log('done');
         console.log(stdout);
         // 在此处会同步等待转换结束后返回响应
-        // let files = []
-        // files = fs.readdirSync(path.join(__dirname,outBasePath,outpath))
-        // res.status(200).send(files)
+        res.redirect(`http://127.0.0.1:${port}/result.html?id=${outpath}`)
     })
     // 异步操作
-    res.send(JSON.stringify(`转换中，稍后调用http://127.0.0.1:${port}/img?id=${outpath}`));
+    // res.redirect(`http://127.0.0.1:${port}/result.html?id=${outpath}`)
 })
 
-router.get('/img',(req,res) => {
+router.get('/imgs',(req,res) => {
     const {id} = req.query
     let files = []
     files = fs.readdirSync(path.join(__dirname,outBasePath,id))
-    res.status(200).send(files)
+    res.status(200).send(files.map(e=>{
+        return encodeURIComponent('img/'+id+'/'+e) 
+    }))
+})
+router.get('/img/:path',(req,res) => {
+    const img = fs.readFileSync('./'+decodeURIComponent(req.params.path))
+    res.type('jpg')
+    res.status(200).send(img);
 })
 
 app.use(router)
